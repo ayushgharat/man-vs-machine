@@ -3,6 +3,7 @@ export type VLMContextValue = {
   isLoading: boolean;
   error: string | null;
   loadModel: (onProgress?: (msg: string) => void) => Promise<void>;
+  responseCompleted: boolean;
   runInference: (
     video: HTMLVideoElement,
     instruction: string,

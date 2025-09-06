@@ -5,7 +5,7 @@ import type { VLMContextValue } from "../types/vlm";
 
 const VLMContext = createContext<VLMContextValue | null>(null);
 
-const MODEL_ID = "onnx-community/FastVLM-1.5B-ONNX";
+const MODEL_ID = "onnx-community/FastVLM-0.5B-ONNX";
 const MAX_NEW_TOKENS = 512;
 
 export { VLMContext };
@@ -20,6 +20,8 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const loadPromiseRef = useRef<Promise<void> | null>(null);
   const inferenceLock = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const [responseCompleted, setResponseCompleted] = useState(false)
 
   const loadModel = useCallback(
     async (onProgress?: (msg: string) => void) => {
@@ -67,7 +69,9 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   );
 
   const runInference = useCallback(
+    
     async (video: HTMLVideoElement, instruction: string, onTextUpdate?: (text: string) => void): Promise<string> => {
+      setResponseCompleted(false);
       if (inferenceLock.current) {
         console.log("Inference already running, skipping frame");
         return ""; // Return empty string to signal a skip
@@ -96,7 +100,7 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       const messages = [
         {
           role: "system",
-          content: `You are a helpful visual AI assistant. Respond concisely and accurately to the user's query in one sentence.`,
+          content: `You are a helpful visual AI assistant tasked with creating a visual diary for the blind. Provide detailed descriptions of the image so that the user can always reference back to what they previously saw. Provide actual names and rich, specific details as much as possible.`,
         },
         { role: "user", content: `<image>${instruction}` },
       ];
@@ -129,6 +133,7 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
         skip_special_tokens: true,
       });
       inferenceLock.current = false;
+      setResponseCompleted(true)
       return decoded[0].trim();
     },
     [],
@@ -142,6 +147,7 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
         error,
         loadModel,
         runInference,
+        responseCompleted
       }}
     >
       {children}

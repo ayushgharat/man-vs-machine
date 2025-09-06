@@ -11,6 +11,7 @@
     "format": "prettier --write . --print-width 120"
   },
   "dependencies": {
+    "@babycommando/entity-db": "^1.0.11",
     "@huggingface/transformers": "^3.7.2",
     "@tailwindcss/vite": "^4.1.11",
     "react": "^19.1.0",

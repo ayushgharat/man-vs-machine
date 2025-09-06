@@ -5,19 +5,24 @@ import PromptInput from "./PromptInput";
 import LiveCaption from "./LiveCaption";
 import { useVLMContext } from "../context/useVLMContext";
 import { PROMPTS, TIMING } from "../constants";
+import type { EntityDB } from "@babycommando/entity-db";
+import { pipeline } from '@huggingface/transformers';
 
 interface CaptioningViewProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  db: EntityDB
 }
+
 
 function useCaptioningLoop(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   isRunning: boolean,
   promptRef: React.RefObject<string>,
   onCaptionUpdate: (caption: string) => void,
+  onCompleteUpdate: (complete: boolean) => void,
   onError: (error: string) => void,
 ) {
-  const { isLoaded, runInference } = useVLMContext();
+  const { isLoaded, runInference, responseCompleted } = useVLMContext();
   const abortControllerRef = useRef<AbortController | null>(null);
   const onCaptionUpdateRef = useRef(onCaptionUpdate);
   const onErrorRef = useRef(onError);
@@ -25,6 +30,11 @@ function useCaptioningLoop(
   useEffect(() => {
     onCaptionUpdateRef.current = onCaptionUpdate;
   }, [onCaptionUpdate]);
+
+  useEffect(() => {
+    onCompleteUpdate(responseCompleted);
+  }, [responseCompleted, onCompleteUpdate]);
+
 
   useEffect(() => {
     onErrorRef.current = onError;
@@ -67,11 +77,12 @@ function useCaptioningLoop(
   }, [isRunning, isLoaded, runInference, promptRef, videoRef]);
 }
 
-export default function CaptioningView({ videoRef }: CaptioningViewProps) {
+export default function CaptioningView({ videoRef, db }: CaptioningViewProps) {
   const [caption, setCaption] = useState<string>("");
   const [isLoopRunning, setIsLoopRunning] = useState<boolean>(true);
   const [currentPrompt, setCurrentPrompt] = useState<string>(PROMPTS.default);
   const [error, setError] = useState<string | null>(null);
+  const [completeUpdate, onCompleteUpdate] = useState(false);
 
   // Use ref to store current prompt to avoid loop restarts
   const promptRef = useRef<string>(currentPrompt);
@@ -91,7 +102,7 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
     setCaption(`Error: ${errorMessage}`);
   }, []);
 
-  useCaptioningLoop(videoRef, isLoopRunning, promptRef, handleCaptionUpdate, handleError);
+  useCaptioningLoop(videoRef, isLoopRunning, promptRef,handleCaptionUpdate, onCompleteUpdate, handleError);
 
   const handlePromptChange = useCallback((prompt: string) => {
     setCurrentPrompt(prompt);
@@ -103,15 +114,43 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
     if (error) setError(null);
   }, [error]);
 
+  if(completeUpdate) {
+    // store caption in db
+    writeToDatabase(caption);
+    onCompleteUpdate(false)
+  }
+
+  async function writeToDatabase(caption: string) {
+    try {
+      const extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+      const date = new Date();
+      const final_text = [date.toISOString() + " : " + caption];
+      // console.log(final_text)
+      const tensor = await extractor(final_text, { pooling: 'mean', normalize: true });
+      let embedding = tensor.tolist();
+      if (Array.isArray(embedding) && Array.isArray(embedding[0])) {
+        embedding = embedding[0];
+      }
+      await db.insertManualVectors({
+        text: final_text,
+        vector: embedding
+      });
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+
+
   return (
     <div className="absolute inset-0 text-white">
       <div className="relative w-full h-full">
         <WebcamCapture isRunning={isLoopRunning} onToggleRunning={handleToggleLoop} error={error} />
 
         {/* Draggable Prompt Input - Bottom Left */}
-        <DraggableContainer initialPosition="bottom-left">
+        {/* <DraggableContainer initialPosition="bottom-left">
           <PromptInput onPromptChange={handlePromptChange} />
-        </DraggableContainer>
+        </DraggableContainer> */}
 
         {/* Draggable Live Caption - Bottom Right */}
         <DraggableContainer initialPosition="bottom-right">
