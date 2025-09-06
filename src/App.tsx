@@ -4,12 +4,20 @@ import CaptioningView from "./components/CaptioningView";
 import WelcomeScreen from "./components/WelcomeScreen";
 import WebcamPermissionDialog from "./components/WebcamPermissionDialog";
 import type { AppState } from "./types";
+import { EntityDB } from "@babycommando/entity-db";
+
+// import { pipeline, env } from '@xenova/transformers';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>("requesting-permission");
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Initialize the VectorDB instance
+  const db = new EntityDB({
+    vectorPath: "customDB"
+  });
 
   const handlePermissionGranted = useCallback((stream: MediaStream) => {
     setWebcamStream(stream);
@@ -103,7 +111,7 @@ export default function App() {
 
       {appState === "loading" && <LoadingScreen onComplete={handleLoadingComplete} />}
 
-      {appState === "captioning" && <CaptioningView videoRef={videoRef} />}
+      {appState === "captioning" && <CaptioningView videoRef={videoRef} db={db}/>}
     </div>
   );
 }
