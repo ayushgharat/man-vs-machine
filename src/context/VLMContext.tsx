@@ -5,7 +5,7 @@ import type { VLMContextValue } from "../types/vlm";
 
 const VLMContext = createContext<VLMContextValue | null>(null);
 
-const MODEL_ID = "onnx-community/FastVLM-0.5B-ONNX";
+const MODEL_ID = "onnx-community/FastVLM-1.5B-ONNX";
 const MAX_NEW_TOKENS = 512;
 
 export { VLMContext };
