@@ -148,9 +148,9 @@ export default function CaptioningView({ videoRef, db }: CaptioningViewProps) {
         <WebcamCapture isRunning={isLoopRunning} onToggleRunning={handleToggleLoop} error={error} />
 
         {/* Draggable Prompt Input - Bottom Left */}
-        <DraggableContainer initialPosition="bottom-left">
+        {/* <DraggableContainer initialPosition="bottom-left">
           <PromptInput onPromptChange={handlePromptChange} />
-        </DraggableContainer>
+        </DraggableContainer> */}
 
         {/* Draggable Live Caption - Bottom Right */}
         <DraggableContainer initialPosition="bottom-right">
