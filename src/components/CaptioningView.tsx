@@ -6,12 +6,15 @@ import LiveCaption from "./LiveCaption";
 import { useVLMContext } from "../context/useVLMContext";
 import { PROMPTS, TIMING } from "../constants";
 import type { EntityDB } from "@babycommando/entity-db";
+import { FeatureExtractionPipeline, pipeline } from '@huggingface/transformers';
 
 
 interface CaptioningViewProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   db: EntityDB
 }
+
+const systemPrompt = `You are a helpful visual AI assistant tasked with creating a visual diary for the blind. Provide detailed descriptions of the image so that the user can always reference back to what they previously saw. Provide actual names and rich, specific details as much as possible.`
 
 
 function useCaptioningLoop(
@@ -52,7 +55,7 @@ function useCaptioningLoop(
         if (video && video.readyState >= 2 && !video.paused && video.videoWidth > 0) {
           try {
             const currentPrompt = promptRef.current || "";
-            const result = await runInference(video, currentPrompt, onCaptionUpdateRef.current);
+            const result = await runInference(video, systemPrompt, currentPrompt, onCaptionUpdateRef.current);
             if (result && !signal.aborted) onCaptionUpdateRef.current(result);
           } catch (error) {
             if (!signal.aborted) {
@@ -77,7 +80,7 @@ function useCaptioningLoop(
   }, [isRunning, isLoaded, runInference, promptRef, videoRef]);
 }
 
-export default function CaptioningView({ videoRef, db, extractor }: any) {
+export default function CaptioningView({ videoRef, db }: any) {
   const [caption, setCaption] = useState<string>("");
   const [isLoopRunning, setIsLoopRunning] = useState<boolean>(true);
   const [currentPrompt, setCurrentPrompt] = useState<string>(PROMPTS.default);
@@ -122,7 +125,7 @@ export default function CaptioningView({ videoRef, db, extractor }: any) {
 
   async function writeToDatabase(caption: string) {
     try {
-
+      const extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
       if(!extractor) {
         console.log("Extractor not loaded")
       }

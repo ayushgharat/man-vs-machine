@@ -11,6 +11,7 @@
     "format": "prettier --write . --print-width 120"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.61.0",
     "@babycommando/entity-db": "^1.0.11",
     "@elevenlabs/client": "^0.6.1",
     "@elevenlabs/elevenlabs-js": "^2.14.0",

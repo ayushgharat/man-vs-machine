@@ -70,8 +70,9 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
 
   const runInference = useCallback(
     
-    async (video: HTMLVideoElement, instruction: string, onTextUpdate?: (text: string) => void): Promise<string> => {
+    async (video: HTMLVideoElement | null, systemPrompt: string, instruction: string, onTextUpdate?: (text: string) => void): Promise<string> => {
       setResponseCompleted(false);
+      
       if (inferenceLock.current) {
         console.log("Inference already running, skipping frame");
         return ""; // Return empty string to signal a skip
@@ -82,27 +83,41 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
         throw new Error("Model/processor not loaded");
       }
 
-      if (!canvasRef.current) {
-        canvasRef.current = document.createElement("canvas");
+      
+      let rawImg
+      let content
+      if(video != null) {
+        if (!canvasRef.current) {
+          canvasRef.current = document.createElement("canvas");
+        }
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) throw new Error("Could not get canvas context");
+
+        ctx.drawImage(video, 0, 0);
+
+        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        rawImg = new RawImage(frame.data, frame.width, frame.height, 4);
+        content = `<image>${instruction}`
+      } else {
+        // make raw image completely blank
+        const width = 25;   // Define these or use a default size
+        const height = 25;
+        const blankData = new Uint8ClampedArray(width * height * 4); // all zeros (transparent)
+        rawImg = new RawImage(blankData, width, height, 4);
+        content = instruction
       }
-      const canvas = canvasRef.current;
-
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) throw new Error("Could not get canvas context");
-
-      ctx.drawImage(video, 0, 0);
-
-      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const rawImg = new RawImage(frame.data, frame.width, frame.height, 4);
+      console.log(systemPrompt)
+      
       const messages = [
         {
           role: "system",
-          content: `You are a helpful visual AI assistant tasked with creating a visual diary for the blind. Provide detailed descriptions of the image so that the user can always reference back to what they previously saw. Provide actual names and rich, specific details as much as possible.`,
+          content: systemPrompt,
         },
-        { role: "user", content: `<image>${instruction}` },
+        { role: "user", content: content },
       ];
       const prompt = processorRef.current.apply_chat_template(messages, {
         add_generation_prompt: true,

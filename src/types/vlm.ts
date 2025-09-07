@@ -5,7 +5,8 @@ export type VLMContextValue = {
   loadModel: (onProgress?: (msg: string) => void) => Promise<void>;
   responseCompleted: boolean;
   runInference: (
-    video: HTMLVideoElement,
+    video: HTMLVideoElement | null,
+    systemPrompt: string,
     instruction: string,
     onTextUpdate?: (text: string) => void,
   ) => Promise<string>;

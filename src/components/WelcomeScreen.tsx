@@ -7,14 +7,21 @@ import UserQuery from "./UserQuery";
 import { Conversation } from "@elevenlabs/client";
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
 import { FeatureExtractionPipeline, pipeline } from '@huggingface/transformers';
+import { useVLMContext } from "../context/useVLMContext";
+import Anthropic from '@anthropic-ai/sdk';
 import { useEffect, useState } from "react";
-
 
 // interface WelcomeScreenProps {
 //   onStart: () => void;
 // }
 
 export default function WelcomeScreen({ onStart, db }: any) {
+  const { loadModel, isLoading, isLoaded, runInference, responseCompleted } = useVLMContext();
+
+  const anthropic = new Anthropic({
+    apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
+    dangerouslyAllowBrowser: true
+  });
 
   const [rags, setRags] = useState([]);
 
@@ -48,7 +55,45 @@ export default function WelcomeScreen({ onStart, db }: any) {
         embedding = embedding[0];
       }
       const result =  await db.queryManualVectors(embedding);
+      console.log(result)
       setRags(result);
+
+      if(!result || result.length === 0) {
+        alert("No diary entries found to summarize")
+        return;
+      } 
+
+      const dairyEntriesToSummarize = result.map((e: { text: any; }) => e.text).join('\n')
+      const summaryPrompt = `
+        You are assisting a visually impaired user by answering their questions based on their diary entries. 
+        The diary entries may include details about the user’s daily life, objects they interact with, or their surroundings. 
+
+        Your goal is to:
+        - Use only the information contained in the diary entries to answer the user’s request. 
+        - Be as clear, descriptive, and helpful as possible. 
+        - If the answer cannot be determined from the diary entries, say so in a straightforward way. 
+        - Do NOT reference or interpret any images in your response. Focus only on the text.
+        
+        User transcript: ${transcript}
+
+        Here are the diary entries for context:
+        \n\n${dairyEntriesToSummarize}
+        `;
+
+
+      try {
+        const msg = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1024,
+          messages: [{ role: "user", content: summaryPrompt }],
+        });
+        console.log(msg);
+      } catch(e){
+        console.error(e)
+      }
+
+
+      
     }
 
     return (
@@ -152,7 +197,6 @@ export default function WelcomeScreen({ onStart, db }: any) {
             <span className="font-semibold text-lg">Start Live Recording</span>
           </GlassButton>
 
-          <p className="text-sm text-gray-400 opacity-80">AI model will load when you click start</p>
         </div>
       </div>
     </div>
