@@ -4,12 +4,62 @@ import GlassButton from "./GlassButton";
 import { GLASS_EFFECTS } from "../constants";
 import PromptInput from "./PromptInput";
 import UserQuery from "./UserQuery";
+import { Conversation } from "@elevenlabs/client";
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
+import { FeatureExtractionPipeline, pipeline } from '@huggingface/transformers';
 
-interface WelcomeScreenProps {
-  onStart: () => void;
-}
 
-export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
+// interface WelcomeScreenProps {
+//   onStart: () => void;
+// }
+
+export default function WelcomeScreen({ onStart, db }: any) {
+
+  const Dictaphone = () => {
+    const {
+      transcript,
+      listening,
+      resetTranscript,
+      browserSupportsSpeechRecognition
+    } = useSpeechRecognition();
+
+    if (!browserSupportsSpeechRecognition) {
+      return <span>Browser doesn't support speech recognition.</span>;
+    }
+
+    
+
+    async function handle_stopping_recording() {
+      SpeechRecognition.stopListening();
+      const extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+      // console.log(transcript)
+      if(!extractor) {
+        console.log("Extractor not loaded")
+      }
+      
+       const tensor = await extractor(transcript, { pooling: 'mean', normalize: true });
+      let embedding = tensor.tolist();
+      if (Array.isArray(embedding) && Array.isArray(embedding[0])) {
+        embedding = embedding[0];
+      }
+      const result =  await db.queryManualVectors(embedding);
+      console.log(result)
+
+    }
+
+
+
+    return (
+      <div>
+        <p>Microphone: {listening ? 'on' : 'off'}</p>
+        <button onClick={() => SpeechRecognition.startListening()}>Start</button>
+        <button onClick={() => handle_stopping_recording()}>Stop</button>
+        <button onClick={resetTranscript}>Reset</button>
+        <p>{transcript}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="absolute inset-0 text-white flex items-center justify-center p-8">
       <div className="max-w-2xl w-full space-y-8">
@@ -28,6 +78,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
 
         <div className="w-full">
           <UserQuery/>
+          <Dictaphone/>
         </div>
 
         {/* Webcam Status Card */}
