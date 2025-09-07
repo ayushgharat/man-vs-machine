@@ -1,4 +1,4 @@
-# Visual Sense
+# ViewSense
 This is a Visual Diary for blind people so that they can always know current and past information about their environments
 
 - If they forgot where they left something, they can ask visual sense to help them find it
@@ -15,3 +15,6 @@ npm run dev
 ```
 
 The best way we'd recommend using this (if you have apple devices) is to use your iphone as a camera to record your surroundings
+
+Our goal isn't to actually provide these tools within the browser, but to show that we can run llms and vector stores on the edge, in very confined and restricted environments.
+The ultimate vision would be to actually have this run on much smaller hardware, like phones, smart glasses and maybe other forms of specialized hardware.
