@@ -22,9 +22,7 @@ export default function GlassButton({
   return (
     <GlassContainer bgColor={bgColor} className="rounded-xl">
       <button
-        className={`px-4 py-2 border-none cursor-pointer bg-transparent transition-transform duration-200 outline-none ${
-          disabled ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95"
-        } ${className}`}
+        className={`px-4 py-2 border-none cursor-pointer bg-transparent transition-transform duration-200 outline-none`}
         onClick={disabled ? undefined : onClick}
         disabled={disabled}
         {...ariaProps}

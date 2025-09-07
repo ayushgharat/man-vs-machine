@@ -86,7 +86,7 @@ export default function WelcomeScreen({ onStart, db }: any) {
       <div className="max-w-2xl w-full space-y-8">
         {/* Main Title Card */}
         <GlassContainer
-          className="rounded-3xl shadow-2xl hover:scale-105 transition-transform duration-200"
+          className="rounded-3xl shadow-2xl"
           role="banner"
         >
           <div className="p-8 text-center">
@@ -98,6 +98,15 @@ export default function WelcomeScreen({ onStart, db }: any) {
             </p>
             <br></br><br></br>
             <p className="text-xl text-gray-300 leading-relaxed"><b>ALL ON THE EDGE</b></p>
+            <br></br>
+            <br></br>
+            <p className="text-xl text-gray-300 leading-relaxed"><b>User Flow:</b>
+            <br></br> 1. Click "Start Live Recording"
+            <br></br> 2. FastVLM generates transcriptions (runs in-browser)
+            <br></br> 3. Transcriptions stored in VectorDB
+            <br></br> 4. For retrieval, use speech to record your query
+            <br></br> 5. RAG results will be displayed to you
+            </p>
           </div>
         </GlassContainer>
 
