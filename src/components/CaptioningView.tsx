@@ -6,7 +6,7 @@ import LiveCaption from "./LiveCaption";
 import { useVLMContext } from "../context/useVLMContext";
 import { PROMPTS, TIMING } from "../constants";
 import type { EntityDB } from "@babycommando/entity-db";
-import { pipeline } from '@huggingface/transformers';
+
 
 interface CaptioningViewProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -77,7 +77,7 @@ function useCaptioningLoop(
   }, [isRunning, isLoaded, runInference, promptRef, videoRef]);
 }
 
-export default function CaptioningView({ videoRef, db }: CaptioningViewProps) {
+export default function CaptioningView({ videoRef, db, extractor }: any) {
   const [caption, setCaption] = useState<string>("");
   const [isLoopRunning, setIsLoopRunning] = useState<boolean>(true);
   const [currentPrompt, setCurrentPrompt] = useState<string>(PROMPTS.default);
@@ -122,7 +122,11 @@ export default function CaptioningView({ videoRef, db }: CaptioningViewProps) {
 
   async function writeToDatabase(caption: string) {
     try {
-      const extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+
+      if(!extractor) {
+        console.log("Extractor not loaded")
+      }
+      
       const date = new Date();
       const final_text = [date.toISOString() + " : " + caption];
       // console.log(final_text)
